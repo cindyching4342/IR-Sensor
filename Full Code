@@ -1,0 +1,109 @@
+#include <LiquidCrystal.h>
+
+int seconds = 0;
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+const int ENA = 11;    // Pin connected to ENA
+const int ENB = 3;     // Pin connected to ENB
+const int IN1 = A2;    // Control pin for Motor A (left wheels)
+const int IN2 = A3;    // Control pin for Motor A (left wheels)
+const int IN3 = A4;    // Control pin for Motor B (right wheels)
+const int IN4 = A5;    // Control pin for Motor B (right wheels)
+const int sr = 12;     // sensor right
+const int sl = 13;     // sensor left
+int svr = 0;           // sensor value right
+int svl = 0;           // sensor value left
+
+
+
+
+void setup() {
+  Serial.begin(9600);              // Init Serila at 115200 Baud
+  Serial.println("Serial Working");  // Test to check if serial is working or not
+
+  lcd.begin(16, 2);
+  lcd.print("Time display:");
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(sr, INPUT);
+  pinMode(sl, INPUT);
+}
+
+void forward() {
+  analogWrite(ENA, 70);
+  analogWrite(ENB, 70);
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+}
+
+void right() {
+  analogWrite(ENA, 230);
+  analogWrite(ENB, 175);
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
+
+void left() {
+  analogWrite(ENA, 175);
+  analogWrite(ENB, 230);
+  digitalWrite(IN1, LOW);  //RIGHT MOTOR
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW);  //LEFT MOTOR
+  digitalWrite(IN4, HIGH);
+}
+
+void stop() {
+  analogWrite(ENA, 0);
+  analogWrite(ENB, 0);
+}
+
+void loop() {
+  svr = digitalRead(sr);
+  svl = digitalRead(sl);
+
+  // Print the sensor value to the Serial Monitor
+  Serial.print("Right Sensor Value: ");
+  Serial.println(svr);
+  Serial.print("Left Sensor Value: ");
+  Serial.println(svl);
+
+  if ((svl == HIGH) && (svr == HIGH)) {
+    forward();  // Move forward if both sensors detect the line
+  }
+
+  else if ((svl == LOW) && (svr == HIGH)) {
+    left();  // Sharp left turn
+  }
+
+  else if ((svl == HIGH) && (svr == LOW)) {
+    right();  // Sharp right turn
+  }
+
+  else if ((svl == LOW) && (svr == LOW)) {
+    // Stop or perform 90-degree turn based on track configuration
+    stop();
+    delay(500);  // Pause to evaluate the situation
+
+    // Detect 90-degree turn by checking sensor states after a brief delay
+    svr = digitalRead(sr);
+    svl = digitalRead(sl);
+
+    if ((svl == LOW) && (svr == HIGH)) {
+      left();  // If left sensor detects the line, perform a left turn
+    }
+
+    else if ((svl == HIGH) && (svr == LOW)) {
+      right();  // If right sensor detects the line, perform a right turn
+    }
+  }
+
+  delay(100);  // Small delay for stability
+}
+  
